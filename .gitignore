@@ -1,0 +1,7 @@
+/vendor/
+/node_modules/
+/build/
+/.gradle_home/
+.gradle_home/
+/.gradle/
+.env

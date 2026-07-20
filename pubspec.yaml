@@ -1,0 +1,72 @@
+name: sbrai_hub_vendor
+description: Sbrai Hub - Nigerian marketplace app (buyer/vendor) for building materials, furniture and professional services.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # Routing
+  go_router: ^14.2.0
+
+  # Networking
+  dio: ^5.5.0
+
+  # Secure storage for auth tokens
+  flutter_secure_storage: 9.2.2
+
+  # Social auth
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^7.1.1
+
+  # Payments — both Paystack and Espees use hosted checkout pages returned
+  # by the backend (GET /subscriptions/paystack/checkout, POST
+  # /subscriptions/espees/pay), opened in a WebView.
+  webview_flutter: ^4.9.0
+
+  # Media / forms
+  image_picker: ^1.1.2
+  intl: ^0.19.0
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.4.1
+
+  # Utilities
+  shared_preferences: ^2.3.2
+  connectivity_plus: ^6.0.5
+  url_launcher: ^6.3.0
+  fluttertoast: ^8.2.8
+  logger: ^2.4.0
+
+  # Realtime chat — Laravel Reverb speaks the Pusher protocol, so this
+  # client works against Reverb without modification. See
+  # core/config/realtime_config.dart for the connection values you need
+  # to fill in from your backend's .env (REVERB_APP_KEY, REVERB_HOST,
+  # REVERB_PORT). Android/iOS only — see PlatformSupport.supportsRealtime.
+  pusher_channels_flutter: 2.4.0
+
+  # Voice/video calling via Agora, matching your existing sbrai_solutions
+  # app's calling setup. Requires an Agora App ID — see
+  # core/config/call_config.dart. Android/iOS only — see
+  # PlatformSupport.supportsCalling.
+  agora_rtc_engine: ^6.3.2
+  permission_handler: ^11.3.1
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/

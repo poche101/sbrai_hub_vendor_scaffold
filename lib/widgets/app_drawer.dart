@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../core/theme/app_colors.dart';
+import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
+
+class AppDrawer extends StatelessWidget {
+  const AppDrawer({super.key});
+
+  void _navigate(BuildContext context, String path) {
+    Navigator.pop(context); // close the drawer first
+    context.push(path); // push (not go) so the destination gets a back arrow
+  }
+
+  void _goHome(BuildContext context) {
+    Navigator.pop(context);
+    context.go('/home'); // Home is the root tab — clears back stack intentionally
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final locale = context.watch<LocaleProvider>();
+    final user = auth.currentUser;
+    final isVendor = auth.isVendor;
+
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              color: AppColors.primary,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white24,
+                    child: Icon(isVendor ? Icons.storefront : Icons.person, color: Colors.white),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(user?.fullName ?? 'Guest',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text(user?.email ?? '', style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Chip(
+                        label: Text(isVendor ? locale.t('vendor') : locale.t('buyer')),
+                        backgroundColor: Colors.white24,
+                        labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      if (user?.isVerified ?? false) ...[
+                        const SizedBox(width: 8),
+                        const Chip(
+                          avatar: Icon(Icons.verified, size: 14, color: Colors.white),
+                          label: Text('Verified'),
+                          backgroundColor: AppColors.success,
+                          labelStyle: TextStyle(color: Colors.white, fontSize: 12),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                children: [
+                  ListTile(leading: const Icon(Icons.home_outlined), title: Text(locale.t('home')), onTap: () => _goHome(context)),
+                  ListTile(leading: const Icon(Icons.person_outline), title: Text(locale.t('profile')), onTap: () => _navigate(context, '/profile')),
+                  if (isVendor) ...[
+                    ListTile(leading: const Icon(Icons.add_circle_outline), title: Text(locale.t('postAd')), onTap: () => _navigate(context, '/post-ad')),
+                    ListTile(leading: const Icon(Icons.dashboard_outlined), title: Text(locale.t('dashboard')), onTap: () => _navigate(context, '/vendor/dashboard')),
+                    ListTile(leading: const Icon(Icons.credit_card_outlined), title: Text(locale.t('subscription')), onTap: () => _navigate(context, '/vendor/subscription')),
+                  ],
+                  ListTile(leading: const Icon(Icons.favorite_border), title: Text(locale.t('favorites')), onTap: () => _navigate(context, '/favorites')),
+                  ListTile(leading: const Icon(Icons.chat_bubble_outline), title: Text(locale.t('messages')), onTap: () => _navigate(context, '/messages')),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.verified_user_outlined),
+                    title: Text(locale.t('kycVerification')),
+                    onTap: () => _navigate(context, isVendor ? '/vendor/kyc' : '/buyer/kyc'),
+                  ),
+                  ListTile(leading: const Icon(Icons.settings_outlined), title: Text(locale.t('settings')), onTap: () => _navigate(context, '/settings')),
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: AppColors.danger),
+                    title: Text(locale.t('logout'), style: const TextStyle(color: AppColors.danger)),
+                    onTap: () {
+                      Navigator.pop(context);
+                      auth.logout();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: Text('Sbrai Hub  •  Version 1.0', style: TextStyle(color: AppColors.textMuted))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
