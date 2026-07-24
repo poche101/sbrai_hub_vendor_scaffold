@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../core/network/api_client.dart';
 import '../core/storage/token_storage.dart';
@@ -22,8 +23,11 @@ class AuthProvider extends ChangeNotifier {
     _restoreSession();
   }
 
-  bool get isLoggedIn => status == AuthStatus.authenticated && currentUser != null;
+  bool get isLoggedIn =>
+      status == AuthStatus.authenticated && currentUser != null;
   bool get isVendor => currentUser?.isVendor ?? false;
+  bool get isBuyer => currentUser?.role == UserRole.buyer;
+  bool get isAdmin => currentUser?.role == UserRole.admin;
 
   Future<void> _restoreSession() async {
     final token = await TokenStorage.instance.getToken();
@@ -59,9 +63,15 @@ class AuthProvider extends ChangeNotifier {
       await action();
       status = AuthStatus.authenticated;
       return true;
-    } catch (e) {
-      errorMessage = e.toString().replaceFirst('ApiException(', '').replaceFirst(RegExp(r'\):.*'), '');
+    } catch (e, stackTrace) {
+      // 🚨 Print full details directly to your terminal log!
+      debugPrint('================ 🛑 AUTH ERROR 🛑 ================');
+      debugPrint('Error: $e');
+      debugPrint('StackTrace:\n$stackTrace');
+      debugPrint('===================================================');
+
       errorMessage = _friendly(e);
+      status = AuthStatus.unauthenticated;
       return false;
     } finally {
       isLoading = false;
@@ -81,7 +91,8 @@ class AuthProvider extends ChangeNotifier {
   }) {
     return _runAuthAction(() async {
       if (!termsAccepted) {
-        throw Exception('You must accept the Terms of Service and Privacy Policy to continue.');
+        throw Exception(
+            'You must accept the Terms of Service and Privacy Policy to continue.');
       }
       final result = await _authService.login(email: email, password: password);
       await _persistSession(result);
@@ -98,7 +109,8 @@ class AuthProvider extends ChangeNotifier {
   }) {
     return _runAuthAction(() async {
       if (!termsAccepted) {
-        throw Exception('You must accept the Terms of Service and Privacy Policy to continue.');
+        throw Exception(
+            'You must accept the Terms of Service and Privacy Policy to continue.');
       }
       final result = await _authService.registerBuyer(
         fullName: fullName,
@@ -123,7 +135,8 @@ class AuthProvider extends ChangeNotifier {
   }) {
     return _runAuthAction(() async {
       if (!termsAccepted) {
-        throw Exception('You must accept the Terms of Service and Privacy Policy to continue.');
+        throw Exception(
+            'You must accept the Terms of Service and Privacy Policy to continue.');
       }
       final result = await _authService.registerVendor(
         fullName: fullName,
@@ -138,17 +151,25 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  Future<bool> continueWithGoogle({required String role, required bool termsAccepted}) {
+  Future<bool> continueWithGoogle(
+      {required String role, required bool termsAccepted}) {
     return _runAuthAction(() async {
       if (!termsAccepted) {
-        throw Exception('You must accept the Terms of Service and Privacy Policy to continue.');
+        throw Exception(
+            'You must accept the Terms of Service and Privacy Policy to continue.');
       }
+
       final tokens = await _socialAuthService.signInWithGoogle();
-      if (tokens == null || tokens.idToken == null) {
-        throw Exception('Google sign-in was cancelled.');
+
+      // Fix: Throw an error instead of silently returning so the catch block handles it
+      if (tokens == null ||
+          (tokens.idToken == null && tokens.accessToken == null)) {
+        throw Exception(
+            'Google sign-in was cancelled or failed to initialize.');
       }
+
       final result = await _authService.googleAuth(
-        idToken: tokens.idToken!,
+        idToken: tokens.idToken ?? '',
         accessToken: tokens.accessToken,
         role: role,
       );
@@ -156,14 +177,24 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  Future<bool> continueWithFacebook({required String role, required bool termsAccepted}) {
+  Future<bool> continueWithFacebook(
+      {required String role, required bool termsAccepted}) {
     return _runAuthAction(() async {
       if (!termsAccepted) {
-        throw Exception('You must accept the Terms of Service and Privacy Policy to continue.');
+        throw Exception(
+            'You must accept the Terms of Service and Privacy Policy to continue.');
       }
+
       final token = await _socialAuthService.signInWithFacebook();
-      if (token == null) throw Exception('Facebook sign-in was cancelled.');
-      final result = await _authService.facebookAuth(accessToken: token, role: role);
+
+      // Fix: Throw an error instead of silently returning so the catch block handles it
+      if (token == null) {
+        throw Exception(
+            'Facebook sign-in was cancelled or failed to initialize.');
+      }
+
+      final result =
+          await _authService.facebookAuth(accessToken: token, role: role);
       await _persistSession(result);
     });
   }
@@ -207,8 +238,10 @@ class AuthProvider extends ChangeNotifier {
     return true;
   }
 
-  Future<void> changePassword({required String currentPassword, required String newPassword}) {
-    return _authService.changePassword(currentPassword: currentPassword, newPassword: newPassword);
+  Future<void> changePassword(
+      {required String currentPassword, required String newPassword}) {
+    return _authService.changePassword(
+        currentPassword: currentPassword, newPassword: newPassword);
   }
 
   /// Updates the profile via PUT /auth/profile and refreshes the locally
@@ -221,6 +254,21 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       errorMessage = 'Could not update your profile. Please try again.';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Uploads a new profile photo via multipart request and refreshes the
+  /// locally cached user so screens (Profile, Drawer, etc.) reflect the
+  /// change immediately without needing a full re-login.
+  Future<bool> updateProfilePhoto(File photo) async {
+    try {
+      currentUser = await _authService.uploadAvatar(photo);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = 'Could not update your profile photo. Please try again.';
       notifyListeners();
       return false;
     }

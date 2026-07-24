@@ -55,7 +55,8 @@ class AuthService {
     return _parseAuthResponse(res.data);
   }
 
-  Future<AuthResult> login({required String email, required String password}) async {
+  Future<AuthResult> login(
+      {required String email, required String password}) async {
     final res = await _client.post(ApiConfig.login, data: {
       'email': email,
       'password': password,
@@ -80,7 +81,8 @@ class AuthService {
   }
 
   /// POST /auth/facebook
-  Future<AuthResult> facebookAuth({required String accessToken, required String role}) async {
+  Future<AuthResult> facebookAuth(
+      {required String accessToken, required String role}) async {
     final res = await _client.post(ApiConfig.facebookAuth, data: {
       'access_token': accessToken,
       'role': role,
@@ -95,19 +97,26 @@ class AuthService {
   /// AuthController::me() returns the user under a `user` key, not `data`.
   Future<AppUser> me() async {
     final res = await _client.get(ApiConfig.me);
-    return AppUser.fromJson(Map<String, dynamic>.from(res.data['user'] ?? res.data['data'] ?? res.data));
+    return AppUser.fromJson(Map<String, dynamic>.from(
+        res.data['user'] ?? res.data['data'] ?? res.data));
   }
 
   Future<AppUser> updateProfile(Map<String, dynamic> fields) async {
     final res = await _client.put(ApiConfig.updateProfile, data: fields);
-    return AppUser.fromJson(Map<String, dynamic>.from(res.data['user'] ?? res.data['data'] ?? res.data));
+    return AppUser.fromJson(Map<String, dynamic>.from(
+        res.data['user'] ?? res.data['data'] ?? res.data));
   }
 
-  Future<void> uploadAvatar(File image) async {
+  Future<AppUser> uploadAvatar(File image) async {
     final formData = FormData.fromMap({
-      'avatar': await MultipartFile.fromFile(image.path, filename: 'avatar.jpg'),
+      'avatar':
+          await MultipartFile.fromFile(image.path, filename: 'avatar.jpg'),
     });
-    await _client.postMultipart(ApiConfig.uploadAvatar, formData);
+    final res = await _client.postMultipart(ApiConfig.uploadAvatar, formData);
+    final data = res.data;
+    final userJson =
+        data is Map ? (data['user'] ?? data['data'] ?? data) : data;
+    return AppUser.fromJson(Map<String, dynamic>.from(userJson));
   }
 
   Future<void> changePassword({
@@ -159,6 +168,7 @@ class AuthService {
     final map = data is Map ? data : {};
     final token = map['token'] ?? map['access_token'] ?? map['data']?['token'];
     final userJson = map['user'] ?? map['data']?['user'] ?? map['data'];
-    return AuthResult(token.toString(), AppUser.fromJson(Map<String, dynamic>.from(userJson)));
+    return AuthResult(token.toString(),
+        AppUser.fromJson(Map<String, dynamic>.from(userJson)));
   }
 }

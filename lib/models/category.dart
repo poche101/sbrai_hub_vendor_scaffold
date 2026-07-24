@@ -49,14 +49,24 @@ class Category {
   /// ListingController::categories() returns id, name, slug, type, icon,
   /// image_url — and ListingController::store()/index() filter/store
   /// listings by the `category` *string* (the slug), not the numeric id.
+  ///
+  /// [iconUrl] prefers the admin-uploaded image (`image_url`) over the
+  /// emoji `icon` field, since an uploaded image should always win when
+  /// present. The backend returns a relative path (e.g.
+  /// "/storage/categories/xyz.jpg"), so it's expanded to a full URL here.
   factory Category.fromJson(Map<String, dynamic> json) {
     final id = json['id'].toString();
+    final rawImageUrl = json['image_url'] ?? json['icon_url'];
     return Category(
       id: id,
       slug: (json['slug'] ?? id).toString(),
       name: json['name'] ?? '',
       type: listingTypeFromString(json['type']),
-      iconUrl: json['icon_url'] ?? json['icon'] ?? json['image_url'],
+      iconUrl: rawImageUrl != null
+          ? (rawImageUrl.toString().startsWith('http')
+              ? rawImageUrl.toString()
+              : 'https://sbraisolutions.com${rawImageUrl.toString()}')
+          : null,
       isActive: json['is_active'] ?? json['active'] ?? true,
       sortOrder: json['sort_order'] ?? json['order'] ?? 0,
     );
@@ -86,7 +96,11 @@ class Category {
     ];
     return [
       for (int i = 0; i < names.length; i++)
-        Category(id: names[i][0] as String, name: names[i][1] as String, type: names[i][2] as ListingType, sortOrder: i),
+        Category(
+            id: names[i][0] as String,
+            name: names[i][1] as String,
+            type: names[i][2] as ListingType,
+            sortOrder: i),
     ];
   }
 }

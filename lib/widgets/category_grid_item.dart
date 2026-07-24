@@ -14,7 +14,8 @@ class CategoryGridItem extends StatelessWidget {
   final Category category;
   final VoidCallback onTap;
 
-  const CategoryGridItem({super.key, required this.category, required this.onTap});
+  const CategoryGridItem(
+      {super.key, required this.category, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -25,25 +26,36 @@ class CategoryGridItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            height: 64,
-            width: 64,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(12),
+          Expanded(
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: category.iconUrl != null && category.iconUrl!.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: category.iconUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const Center(
+                          child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2)),
+                        ),
+                        errorWidget: (_, __, ___) => const Icon(
+                            Icons.category_outlined,
+                            color: AppColors.primary,
+                            size: 26),
+                      )
+                    : const Icon(Icons.category_outlined,
+                        color: AppColors.primary, size: 26),
+              ),
             ),
-            child: category.iconUrl != null && category.iconUrl!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: category.iconUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => const Center(
-                      child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                    ),
-                    errorWidget: (_, __, ___) => const Icon(Icons.category_outlined, color: AppColors.primary, size: 26),
-                  )
-                : const Icon(Icons.category_outlined, color: AppColors.primary, size: 26),
           ),
           const SizedBox(height: 6),
           Text(
@@ -51,7 +63,8 @@ class CategoryGridItem extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
           ),
         ],
       ),

@@ -1,12 +1,13 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import '../storage/token_storage.dart';
 import 'api_exception.dart';
 
 /// Thin wrapper around [Dio] shared by every service class.
 /// Handles: base URL, bearer token injection, 401 handling hook,
-/// and converting Laravel's standard error/validation shape into
-/// a typed [ApiException].
+/// terminal logging, and converting Laravel's standard error/validation
+/// shape into a typed [ApiException].
 class ApiClient {
   ApiClient._internal() {
     _dio = Dio(
@@ -35,6 +36,23 @@ class ApiClient {
         },
       ),
     );
+
+    // 🌐 Print raw Network & Authentication logs directly to terminal in Debug Mode
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+          logPrint: (object) {
+            debugPrint('🌐 [API LOG] $object');
+          },
+        ),
+      );
+    }
   }
 
   static final ApiClient instance = ApiClient._internal();
@@ -73,6 +91,17 @@ class ApiClient {
 
   ApiException _mapError(DioException e) {
     final response = e.response;
+
+    // 🚨 Print detailed Exception details in Debug Mode
+    if (kDebugMode) {
+      debugPrint('================ 🛑 API EXCEPTION 🛑 ================');
+      debugPrint('Type: ${e.type}');
+      debugPrint('Error Message: ${e.message}');
+      debugPrint('Status Code: ${response?.statusCode}');
+      debugPrint('Response Data: ${response?.data}');
+      debugPrint('====================================================');
+    }
+
     if (response == null) {
       return ApiException('Network error. Please check your connection.');
     }
@@ -90,6 +119,7 @@ class ApiClient {
       }
     }
 
-    return ApiException(message, statusCode: response.statusCode, fieldErrors: fieldErrors);
+    return ApiException(message,
+        statusCode: response.statusCode, fieldErrors: fieldErrors);
   }
 }

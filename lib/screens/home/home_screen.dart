@@ -56,7 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _trending = results[2] as List<Product>;
       });
     } catch (e) {
-      setState(() => _error = 'Could not load listings. Pull down to try again.');
+      setState(
+          () => _error = 'Could not load listings. Pull down to try again.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -122,42 +123,68 @@ class _HomeScreenState extends State<HomeScreen> {
                           Builder(
                             builder: (context) => IconButton(
                               icon: const Icon(Icons.menu, color: Colors.white),
-                              onPressed: () => Scaffold.of(context).openDrawer(),
+                              onPressed: () =>
+                                  Scaffold.of(context).openDrawer(),
                             ),
                           ),
                           Container(
                             height: 30,
                             width: 30,
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(7)),
-                            child: const Icon(Icons.storefront_rounded, color: AppColors.primary, size: 17),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(7)),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.asset(
+                                'assets/images/sbrai-logo.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.storefront_rounded,
+                                        color: AppColors.primary, size: 17),
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          const Text('Sbrai Hub', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          const Text('Sbrai Hub',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15)),
                           const Spacer(),
                           PopupMenuButton<AppLanguage>(
                             tooltip: 'Select language',
                             initialValue: locale.language,
-                            onSelected: (lang) => context.read<LocaleProvider>().setLanguage(lang),
+                            onSelected: (lang) => context
+                                .read<LocaleProvider>()
+                                .setLanguage(lang),
                             itemBuilder: (context) => AppLanguage.values
                                 .map((lang) => PopupMenuItem(
                                       value: lang,
                                       child: Row(
                                         children: [
                                           Expanded(child: Text(lang.label)),
-                                          if (lang == locale.language) const Icon(Icons.check, size: 16, color: AppColors.primary),
+                                          if (lang == locale.language)
+                                            const Icon(Icons.check,
+                                                size: 16,
+                                                color: AppColors.primary),
                                         ],
                                       ),
                                     ))
                                 .toList(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20)),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: const [
                                   Text('🇳🇬', style: TextStyle(fontSize: 12)),
                                   SizedBox(width: 4),
-                                  Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textPrimary),
+                                  Icon(Icons.keyboard_arrow_down,
+                                      size: 16, color: AppColors.textPrimary),
                                 ],
                               ),
                             ),
@@ -168,11 +195,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.person_outline, color: Colors.white, size: 18),
+                                const Icon(Icons.person_outline,
+                                    color: Colors.white, size: 18),
                                 const SizedBox(width: 3),
                                 Text(
-                                  auth.isVendor ? locale.t('vendor') : locale.t('buyer'),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                                  auth.isVendor
+                                      ? locale.t('vendor')
+                                      : locale.t('buyer'),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13),
                                 ),
                               ],
                             ),
@@ -181,9 +214,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        locale.t('searchPlaceholder'),
+                        auth.isVendor
+                            ? 'Sbrai Solutions Limited'
+                            : 'What are you looking for?',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20),
                       ),
                       const SizedBox(height: 14),
                       Row(
@@ -198,25 +236,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: Row(
                                         children: [
                                           Expanded(child: Text(s)),
-                                          if (s == _selectedState) const Icon(Icons.check, size: 16, color: AppColors.primary),
+                                          if (s == _selectedState)
+                                            const Icon(Icons.check,
+                                                size: 16,
+                                                color: AppColors.primary),
                                         ],
                                       ),
                                     ))
                                 .toList(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 13),
                               constraints: const BoxConstraints(maxWidth: 120),
-                              decoration: BoxDecoration(color: AppColors.navyDark, borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(
+                                  color: AppColors.navyDark,
+                                  borderRadius: BorderRadius.circular(10)),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: Text(
                                       _selectedState,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white),
                                     ),
                                   ),
-                                  const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white70),
+                                  const Icon(Icons.keyboard_arrow_down,
+                                      size: 16, color: Colors.white70),
                                 ],
                               ),
                             ),
@@ -224,26 +272,35 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Container(
-                              decoration: BoxDecoration(color: AppColors.navyDark, borderRadius: BorderRadius.circular(10)),
+                              decoration: BoxDecoration(
+                                  color: AppColors.navyDark,
+                                  borderRadius: BorderRadius.circular(10)),
                               child: TextField(
                                 controller: _searchController,
                                 onSubmitted: _search,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 13),
                                 decoration: InputDecoration(
                                   hintText: locale.t('searchPlaceholder'),
-                                  hintStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                                  hintStyle: const TextStyle(
+                                      color: Colors.white54, fontSize: 13),
                                   filled: false,
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 13),
                                   suffixIcon: Padding(
                                     padding: const EdgeInsets.all(4),
                                     child: IconButton(
                                       icon: Container(
                                         padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-                                        child: const Icon(Icons.search, color: Colors.white, size: 16),
+                                        decoration: const BoxDecoration(
+                                            color: AppColors.primary,
+                                            shape: BoxShape.circle),
+                                        child: const Icon(Icons.search,
+                                            color: Colors.white, size: 16),
                                       ),
-                                      onPressed: () => _search(_searchController.text),
+                                      onPressed: () =>
+                                          _search(_searchController.text),
                                     ),
                                   ),
                                 ),
@@ -256,16 +313,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_categories.isEmpty && _isLoading)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white)),
                         )
                       else
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            final columns = _categoryColumns(constraints.maxWidth);
+                            final columns =
+                                _categoryColumns(constraints.maxWidth);
                             return GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: columns,
                                 mainAxisSpacing: 16,
                                 crossAxisSpacing: 8,
@@ -276,7 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final cat = _categories[i];
                                 return CategoryGridItem(
                                   category: cat,
-                                  onTap: () => context.push('/category/${cat.slug}?name=${Uri.encodeComponent(cat.name)}'),
+                                  onTap: () => context.push(
+                                      '/category/${cat.slug}?name=${Uri.encodeComponent(cat.name)}'),
                                 );
                               },
                             );
@@ -286,8 +348,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(locale.t('trending'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                          const Icon(Icons.grid_view_rounded, color: Colors.white, size: 20),
+                          Text(locale.t('trending'),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16)),
+                          const Icon(Icons.grid_view_rounded,
+                              color: Colors.white, size: 20),
                         ],
                       ),
                     ],
@@ -303,8 +370,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(locale.t('recommended'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('${_products.length} ${locale.t('items')}', style: const TextStyle(color: AppColors.textMuted)),
+                    Text(locale.t('recommended'),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('${_products.length} ${locale.t('items')}',
+                        style: const TextStyle(color: AppColors.textMuted)),
                   ],
                 ),
               ),
@@ -313,24 +383,33 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Center(child: Text(_error!, style: const TextStyle(color: AppColors.danger))),
+                  child: Center(
+                      child: Text(_error!,
+                          style: const TextStyle(color: AppColors.danger))),
                 ),
               )
             else if (_isLoading)
-              const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator())))
+              const SliverToBoxAdapter(
+                  child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Center(child: CircularProgressIndicator())))
             else if (_products.isEmpty)
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.all(32),
-                  child: Center(child: Text('No listings yet. Check back soon!', style: TextStyle(color: AppColors.textMuted))),
+                  child: Center(
+                      child: Text('No listings yet. Check back soon!',
+                          style: TextStyle(color: AppColors.textMuted))),
                 ),
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 sliver: SliverLayoutBuilder(
                   builder: (context, constraints) {
-                    final columns = _crossAxisCount(constraints.crossAxisExtent);
+                    final columns =
+                        _crossAxisCount(constraints.crossAxisExtent);
                     return SliverGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: columns,
@@ -350,11 +429,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        onPressed: () => context.push('/post-ad'),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: auth.isVendor
+          ? FloatingActionButton(
+              backgroundColor: AppColors.primary,
+              onPressed: () => context.push('/post-ad'),
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 }

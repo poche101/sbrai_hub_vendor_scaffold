@@ -26,16 +26,21 @@ class DashboardStats {
   /// `messages`/`total_sales`). It also has no voucher-balance field at
   /// all (that only lives behind SubscriptionController::voucherBalance),
   /// so [voucherBalance] is merged in separately by [VendorService.getDashboard].
-  factory DashboardStats.fromJson(Map<String, dynamic> json, {double voucherBalance = 0}) {
+  factory DashboardStats.fromJson(Map<String, dynamic> json,
+      {double voucherBalance = 0}) {
     final stats = (json['stats'] ?? json['data'] ?? json) as Map;
-    final activities = (json['activities'] ?? json['recent_activity'] ?? []) as List;
+    final activities =
+        (json['activities'] ?? json['recent_activity'] ?? []) as List;
     return DashboardStats(
       activeListings: stats['active_listings'] ?? 0,
       totalViews: stats['total_views'] ?? 0,
       messages: stats['total_chats'] ?? stats['messages'] ?? 0,
-      totalSales: (stats['total_revenue'] ?? stats['total_sales'] ?? 0).toDouble(),
+      totalSales:
+          (stats['total_revenue'] ?? stats['total_sales'] ?? 0).toDouble(),
       adVoucherBalance: voucherBalance,
-      recentActivity: activities.map((e) => DashboardActivity.fromJson(Map<String, dynamic>.from(e))).toList(),
+      recentActivity: activities
+          .map((e) => DashboardActivity.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }
@@ -45,7 +50,8 @@ class DashboardActivity {
   final DateTime at;
   DashboardActivity({required this.message, required this.at});
 
-  factory DashboardActivity.fromJson(Map<String, dynamic> json) => DashboardActivity(
+  factory DashboardActivity.fromJson(Map<String, dynamic> json) =>
+      DashboardActivity(
         message: json['message'] ?? '',
         at: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       );
@@ -65,11 +71,20 @@ class VendorService {
   Future<List<Product>> getMyListings() async {
     final res = await _client.get(ApiConfig.vendorListings);
     final list = (res.data['data'] ?? res.data) as List;
-    return list.map((e) => Product.fromJson(Map<String, dynamic>.from(e))).toList();
+    return list
+        .map((e) => Product.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<Map<String, dynamic>> getAnalytics() async {
     final res = await _client.get(ApiConfig.vendorAnalytics);
     return Map<String, dynamic>.from(res.data['data'] ?? res.data);
+  }
+
+  /// Deletes a vendor's own listing. Expects a Laravel route like
+  /// `DELETE /vendor/listings/{id}` (VendorController::destroyListing)
+  /// that checks ownership server-side before deleting.
+  Future<void> deleteListing(String id) async {
+    await _client.delete('${ApiConfig.listings}/$id');
   }
 }

@@ -29,35 +29,58 @@ GoRouter buildRouter(AuthProvider auth) {
     initialLocation: '/',
     refreshListenable: auth,
     redirect: (context, state) {
-      final unauthScreens = ['/', '/role-select', '/login', '/signup/buyer', '/signup/vendor', '/forgot-password', '/reset-password'];
-      final onUnauthScreen = unauthScreens.any((p) => state.matchedLocation.startsWith(p));
+      final unauthScreens = {
+        '/',
+        '/role-select',
+        '/login',
+        '/signup/buyer',
+        '/signup/vendor',
+        '/forgot-password',
+        '/reset-password'
+      };
 
-      if (auth.status == AuthStatus.unknown) return null; // splash decides
+      // Use exact set lookup
+      final onUnauthScreen = unauthScreens.contains(state.matchedLocation);
 
-      // Logged out and trying to reach a protected route -> bounce to role-select.
-      if (!auth.isLoggedIn && !onUnauthScreen) return '/role-select';
+      // 1. Keep spinning while AuthProvider resolves session token
+      if (auth.status == AuthStatus.unknown) return null;
 
-      // Logged in and sitting on an auth screen -> this is the ONLY place
-      // that decides where to land post-login/signup. Auth screens
-      // themselves never call context.go after a successful login/signup —
-      // they just show a success toast — so there is exactly one
-      // navigation trigger instead of two racing each other.
+      // 2. Unauthenticated user sitting on splash ('/') -> move to /role-select
+      if (!auth.isLoggedIn && state.matchedLocation == '/') {
+        return '/role-select';
+      }
+
+      // 3. Logged out user attempting to visit a protected route -> bounce to role-select
+      if (!auth.isLoggedIn && !onUnauthScreen) {
+        return '/role-select';
+      }
+
+      // 4. Authenticated user sitting on auth/splash screens -> redirect to home
       if (auth.isLoggedIn && onUnauthScreen) {
-        return auth.isVendor ? '/vendor/kyc' : '/home';
+        return '/home'; // Everyone goes to /home upon sign-in
       }
 
       return null;
     },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
-      GoRoute(path: '/role-select', builder: (context, state) => const RoleSelectionScreen()),
+      GoRoute(
+          path: '/role-select',
+          builder: (context, state) => const RoleSelectionScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/signup/buyer', builder: (context, state) => const SignupBuyerScreen()),
-      GoRoute(path: '/signup/vendor', builder: (context, state) => const SignupVendorScreen()),
-      GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
+      GoRoute(
+          path: '/signup/buyer',
+          builder: (context, state) => const SignupBuyerScreen()),
+      GoRoute(
+          path: '/signup/vendor',
+          builder: (context, state) => const SignupVendorScreen()),
+      GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(
         path: '/reset-password',
-        builder: (context, state) => ResetPasswordScreen(email: state.uri.queryParameters['email'] ?? ''),
+        builder: (context, state) => ResetPasswordScreen(
+            email: state.uri.queryParameters['email'] ?? ''),
       ),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
@@ -69,13 +92,23 @@ GoRouter buildRouter(AuthProvider auth) {
       ),
       GoRoute(
         path: '/product/:id',
-        builder: (context, state) => ProductDetailsScreen(productId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            ProductDetailsScreen(productId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
-      GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
-      GoRoute(path: '/buyer/kyc', builder: (context, state) => const KycVerificationScreen()),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
-      GoRoute(path: '/messages', builder: (context, state) => const MessagesScreen()),
+      GoRoute(
+          path: '/profile', builder: (context, state) => const ProfileScreen()),
+      GoRoute(
+          path: '/favorites',
+          builder: (context, state) => const FavoritesScreen()),
+      GoRoute(
+          path: '/buyer/kyc',
+          builder: (context, state) => const KycVerificationScreen()),
+      GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen()),
+      GoRoute(
+          path: '/messages',
+          builder: (context, state) => const MessagesScreen()),
       GoRoute(
         path: '/messages/new',
         builder: (context, state) => ChatDetailScreen(
@@ -90,21 +123,31 @@ GoRouter buildRouter(AuthProvider auth) {
           chatId: state.pathParameters['id'],
           sellerId: state.uri.queryParameters['otherPartyId'],
           otherPartyName: state.uri.queryParameters['otherPartyName'],
-          otherPartyAvatarUrl: (state.uri.queryParameters['otherPartyAvatar']?.isEmpty ?? true)
-              ? null
-              : state.uri.queryParameters['otherPartyAvatar'],
+          otherPartyAvatarUrl:
+              (state.uri.queryParameters['otherPartyAvatar']?.isEmpty ?? true)
+                  ? null
+                  : state.uri.queryParameters['otherPartyAvatar'],
         ),
       ),
 
       // Vendor-only
-      GoRoute(path: '/vendor/dashboard', builder: (context, state) => const VendorDashboardScreen()),
-      GoRoute(path: '/vendor/kyc', builder: (context, state) => const KycVerificationScreen()),
-      GoRoute(path: '/vendor/subscription', builder: (context, state) => const SubscriptionScreen()),
+      GoRoute(
+          path: '/vendor/dashboard',
+          builder: (context, state) => const VendorDashboardScreen()),
+      GoRoute(
+          path: '/vendor/kyc',
+          builder: (context, state) => const KycVerificationScreen()),
+      GoRoute(
+          path: '/vendor/subscription',
+          builder: (context, state) => const SubscriptionScreen()),
 
-      // Post Ad — always enters through the gate, which checks KYC +
-      // subscription before handing off to the actual 3-step wizard.
-      GoRoute(path: '/post-ad', builder: (context, state) => const PostAdGateScreen()),
-      GoRoute(path: '/post-ad/flow', builder: (context, state) => const PostAdFlowScreen()),
+      // Post Ad
+      GoRoute(
+          path: '/post-ad',
+          builder: (context, state) => const PostAdGateScreen()),
+      GoRoute(
+          path: '/post-ad/flow',
+          builder: (context, state) => const PostAdFlowScreen()),
     ],
   );
 }

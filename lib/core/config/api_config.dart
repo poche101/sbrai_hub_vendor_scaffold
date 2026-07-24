@@ -13,7 +13,8 @@ class ApiConfig {
   static const String register = '/auth/register';
   static const String login = '/auth/login';
   static const String forgotPassword = '/auth/forgot-password';
-  static const String resetPassword = '/auth/reset-password'; // { email, token, password, password_confirmation }
+  static const String resetPassword =
+      '/auth/reset-password'; // { email, token, password, password_confirmation }
   static String confirmAccount(String token) => '/auth/confirm-account/$token';
   static const String googleAuth = '/auth/google';
   static const String facebookAuth = '/auth/facebook';
@@ -36,10 +37,12 @@ class ApiConfig {
   static const String kycPhoneVerify = '/kyc/phone/verify';
   static const String kycIdentityNin = '/kyc/identity/nin';
   static const String kycIdentityBvn = '/kyc/identity/bvn';
-  static const String kycIdentityDriversLicense = '/kyc/identity/drivers-license';
+  static const String kycIdentityDriversLicense =
+      '/kyc/identity/drivers-license';
   static const String kycIdentityPassport = '/kyc/identity/passport';
   static const String kycBusinessCac = '/kyc/business/cac';
-  static const String kycIdentityDocuments = '/kyc/identity/documents'; // multipart fallback upload
+  static const String kycIdentityDocuments =
+      '/kyc/identity/documents'; // multipart fallback upload
 
   // ---- Categories / Listings ---------------------------------------------
   static const String categories = '/categories';
@@ -76,10 +79,14 @@ class ApiConfig {
   // ---- Subscriptions & Payments (vendor only) ------------------------------
   static const String subscriptionStatus = '/subscriptions/status';
   static const String subscriptionTransactions = '/subscriptions/transactions';
-  static const String subscriptionVoucherBalance = '/subscriptions/voucher-balance';
-  static const String subscriptionPaystackCheckout = '/subscriptions/paystack/checkout'; // GET -> hosted checkout URL
-  static const String subscriptionPaystackVerify = '/subscriptions/paystack/verify'; // POST { reference }
-  static const String subscriptionEspeesPay = '/subscriptions/espees/pay'; // POST -> hosted checkout URL
+  static const String subscriptionVoucherBalance =
+      '/subscriptions/voucher-balance';
+  static const String subscriptionPaystackCheckout =
+      '/subscriptions/paystack/checkout'; // GET -> hosted checkout URL
+  static const String subscriptionPaystackVerify =
+      '/subscriptions/paystack/verify'; // POST { reference }
+  static const String subscriptionEspeesPay =
+      '/subscriptions/espees/pay'; // POST -> hosted checkout URL
 
   // ---- Notifications ----------------------------------------------------
   static const String notifications = '/notifications';
@@ -98,7 +105,8 @@ class ApiConfig {
   // ---- Translation --------------------------------------------------------
   static const String translate = '/translate';
   static const String translateBatch = '/translate/batch';
-  static String translateListing(String listingId) => '/translate/listing/$listingId';
+  static String translateListing(String listingId) =>
+      '/translate/listing/$listingId';
 
   // ---- Business rules (mirrors backend-configured pricing) ----------------
   static const int subscriptionFeeNaira = 25000;

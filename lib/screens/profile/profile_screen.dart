@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_messenger.dart';
 import '../../core/theme/app_colors.dart';
@@ -15,9 +18,11 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _vendorService = VendorService();
+  final _imagePicker = ImagePicker();
   int _activeListings = 0;
   int _totalViews = 0;
   int _chats = 0;
+  bool _uploadingPhoto = false;
 
   @override
   void initState() {
@@ -40,12 +45,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _pickAndUploadPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null || !mounted) return;
+
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploadingPhoto = true);
+
+    final success = await context
+        .read<AuthProvider>()
+        .updateProfilePhoto(File(picked.path));
+
+    if (!mounted) return;
+    setState(() => _uploadingPhoto = false);
+
+    if (success) {
+      AppMessenger.showSuccess('Profile photo updated.');
+    } else {
+      AppMessenger.showError('Could not upload your photo. Please try again.');
+    }
+  }
+
   Future<void> _showEditSheet() async {
     final auth = context.read<AuthProvider>();
     final user = auth.currentUser;
     final nameController = TextEditingController(text: user?.fullName ?? '');
     final phoneController = TextEditingController(text: user?.phone ?? '');
-    final businessController = TextEditingController(text: user?.businessName ?? '');
+    final businessController =
+        TextEditingController(text: user?.businessName ?? '');
     final formKey = GlobalKey<FormState>();
 
     final saved = await showModalBottomSheet<bool>(
@@ -64,17 +119,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Edit Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Edit Profile',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              const Text('Full Name', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const Text('Full Name',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: nameController,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
                 decoration: const InputDecoration(hintText: 'Full name'),
               ),
               const SizedBox(height: 16),
-              const Text('Phone Number', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const Text('Phone Number',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 6),
               TextFormField(
                 controller: phoneController,
@@ -83,7 +142,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (auth.isVendor) ...[
                 const SizedBox(height: 16),
-                const Text('Business Name', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const Text('Business Name',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: businessController,
@@ -117,7 +178,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (success) {
       AppMessenger.showSuccess('Profile updated successfully.');
     } else {
-      AppMessenger.showError('Could not update your profile. Please try again.');
+      AppMessenger.showError(
+          'Could not update your profile. Please try again.');
     }
   }
 
@@ -126,6 +188,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = context.watch<AuthProvider>();
     final locale = context.watch<LocaleProvider>();
     final user = auth.currentUser;
+    final avatarUrl = user?.avatarDisplayUrl;
+    final hasPhoto = avatarUrl != null && avatarUrl.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -146,22 +210,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppColors.primaryLight,
-                    child: Icon(auth.isVendor ? Icons.storefront_outlined : Icons.person_outline, color: AppColors.primary, size: 36),
+                  GestureDetector(
+                    onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: AppColors.primaryLight,
+                          backgroundImage:
+                              hasPhoto ? NetworkImage(avatarUrl) : null,
+                          onBackgroundImageError: hasPhoto
+                              ? (exception, stackTrace) {
+                                  debugPrint(
+                                      'Failed to load avatar: $exception');
+                                }
+                              : null,
+                          child: _uploadingPhoto
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : (!hasPhoto
+                                  ? Icon(
+                                      auth.isVendor
+                                          ? Icons.storefront_outlined
+                                          : Icons.person_outline,
+                                      color: AppColors.primary,
+                                      size: 36,
+                                    )
+                                  : null),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt,
+                                size: 14, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  Text(user?.fullName ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(user?.fullName ?? '',
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Chip(label: Text(auth.isVendor ? locale.t('vendor') : locale.t('buyer')), backgroundColor: AppColors.primaryLight),
+                      Chip(
+                          label: Text(auth.isVendor
+                              ? locale.t('vendor')
+                              : locale.t('buyer')),
+                          backgroundColor: AppColors.primaryLight),
                       if (user?.isVerified ?? false) ...[
                         const SizedBox(width: 8),
                         const Chip(
-                          avatar: Icon(Icons.verified, size: 14, color: Colors.white),
+                          avatar: Icon(Icons.verified,
+                              size: 14, color: Colors.white),
                           label: Text('Verified'),
                           backgroundColor: AppColors.success,
                           labelStyle: TextStyle(color: Colors.white),
@@ -173,16 +288,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textMuted),
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 14, color: AppColors.textMuted),
                       const SizedBox(width: 4),
                       Text(
-                        user?.memberSince != null ? 'Joined ${_formatMonthYear(user!.memberSince!)}' : '',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                        user?.memberSince != null
+                            ? 'Joined ${_formatMonthYear(user!.memberSince!)}'
+                            : '',
+                        style: const TextStyle(
+                            color: AppColors.textMuted, fontSize: 13),
                       ),
                       if (user?.rating != null && user!.rating > 0) ...[
                         const SizedBox(width: 12),
                         const Icon(Icons.star, size: 14, color: Colors.amber),
-                        Text(' ${user.rating.toStringAsFixed(1)} rating', style: const TextStyle(fontSize: 13)),
+                        Text(' ${user.rating.toStringAsFixed(1)} rating',
+                            style: const TextStyle(fontSize: 13)),
                       ],
                     ],
                   ),
@@ -197,14 +317,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(locale.t('accountInformation'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(locale.t('accountInformation'),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  _InfoRow(icon: Icons.email_outlined, label: 'Email', value: user?.email ?? ''),
+                  _InfoRow(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      value: user?.email ?? ''),
                   const SizedBox(height: 10),
-                  _InfoRow(icon: Icons.call_outlined, label: 'Phone', value: user?.phone ?? 'Not provided'),
+                  _InfoRow(
+                      icon: Icons.call_outlined,
+                      label: 'Phone',
+                      value: user?.phone ?? 'Not provided'),
                   if (auth.isVendor) ...[
                     const SizedBox(height: 10),
-                    _InfoRow(icon: Icons.storefront_outlined, label: 'Business Name', value: user?.businessName ?? 'Not provided'),
+                    _InfoRow(
+                        icon: Icons.storefront_outlined,
+                        label: 'Business Name',
+                        value: user?.businessName ?? 'Not provided'),
                   ],
                 ],
               ),
@@ -218,15 +349,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(locale.t('yourStatistics'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(locale.t('yourStatistics'),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _StatBox(value: '$_activeListings', label: locale.t('activeListings'))),
+                        Expanded(
+                            child: _StatBox(
+                                value: '$_activeListings',
+                                label: locale.t('activeListings'))),
                         const SizedBox(width: 10),
-                        Expanded(child: _StatBox(value: '$_totalViews', label: locale.t('totalViews'))),
+                        Expanded(
+                            child: _StatBox(
+                                value: '$_totalViews',
+                                label: locale.t('totalViews'))),
                         const SizedBox(width: 10),
-                        Expanded(child: _StatBox(value: '$_chats', label: 'Chats')),
+                        Expanded(
+                            child: _StatBox(value: '$_chats', label: 'Chats')),
                       ],
                     ),
                   ],
@@ -241,7 +381,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   String _formatMonthYear(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${months[dt.month - 1]} ${dt.year}';
   }
@@ -251,13 +402,16 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: const Color(0xFFF6F7F9), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+          color: const Color(0xFFF6F7F9),
+          borderRadius: BorderRadius.circular(10)),
       child: Row(
         children: [
           Icon(icon, size: 18, color: AppColors.textMuted),
@@ -265,7 +419,9 @@ class _InfoRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              Text(label,
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 12)),
               Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
             ],
           ),
@@ -284,11 +440,19 @@ class _StatBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(color: const Color(0xFFF6F7F9), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+          color: const Color(0xFFF6F7F9),
+          borderRadius: BorderRadius.circular(10)),
       child: Column(
         children: [
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary)),
-          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12), textAlign: TextAlign.center),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary)),
+          Text(label,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              textAlign: TextAlign.center),
         ],
       ),
     );

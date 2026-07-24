@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -24,20 +26,46 @@ class GoogleAuthTokens {
 class SocialAuthService {
   final _google = GoogleSignIn(scopes: ['email', 'profile']);
 
+  /// Helper to check if the current platform supports native mobile SDKs
+  bool get _isMobileOrWeb {
+    if (kIsWeb) return true;
+    return Platform.isAndroid || Platform.isIOS;
+  }
+
   Future<GoogleAuthTokens?> signInWithGoogle() async {
+    // 🛡️ Platform guard to prevent Windows crashes
+    if (!_isMobileOrWeb) {
+      throw Exception(
+          'Social sign-in is only available on Mobile (Android/iOS) and Web.');
+    }
+
     final account = await _google.signIn();
     if (account == null) return null; // user cancelled
     final auth = await account.authentication;
-    return GoogleAuthTokens(idToken: auth.idToken, accessToken: auth.accessToken);
+    return GoogleAuthTokens(
+        idToken: auth.idToken, accessToken: auth.accessToken);
   }
 
-  Future<void> signOutGoogle() => _google.signOut();
+  Future<void> signOutGoogle() async {
+    if (!_isMobileOrWeb) return;
+    await _google.signOut();
+  }
 
   Future<String?> signInWithFacebook() async {
-    final result = await FacebookAuth.instance.login(permissions: ['email', 'public_profile']);
+    // 🛡️ Platform guard to prevent Windows crashes
+    if (!_isMobileOrWeb) {
+      throw Exception(
+          'Social sign-in is only available on Mobile (Android/iOS) and Web.');
+    }
+
+    final result = await FacebookAuth.instance
+        .login(permissions: ['email', 'public_profile']);
     if (result.status != LoginStatus.success) return null;
     return result.accessToken?.tokenString;
   }
 
-  Future<void> signOutFacebook() => FacebookAuth.instance.logOut();
+  Future<void> signOutFacebook() async {
+    if (!_isMobileOrWeb) return;
+    await FacebookAuth.instance.logOut();
+  }
 }
